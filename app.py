@@ -6,7 +6,7 @@ st.set_page_config(
     page_title="YouTube Shorts Trend Hub",
     page_icon="🔥",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # ----------------- 컬러풀 & 생동감 넘치는 CSS 스타일링 -----------------
@@ -29,8 +29,8 @@ st.markdown("""
 
     /* 상단 히어로 헤더 */
     .hero-container {
-        text-align: center;
-        padding: 35px 10px 20px 10px;
+        text-align: left;
+        padding: 10px 0 25px 0;
     }
     .badge-pill {
         display: inline-block;
@@ -39,13 +39,13 @@ st.markdown("""
         color: #e60000;
         font-weight: 700;
         font-size: 13px;
-        padding: 6px 16px;
+        padding: 5px 14px;
         border-radius: 999px;
         margin-bottom: 12px;
         letter-spacing: 0.5px;
     }
     .hero-title {
-        font-size: 42px;
+        font-size: 38px;
         font-weight: 900;
         line-height: 1.2;
         background: linear-gradient(120deg, #111111 20%, #FF0033 60%, #FF6B00 100%);
@@ -57,18 +57,6 @@ st.markdown("""
         font-size: 15px;
         color: #636e72;
         font-weight: 500;
-        margin-bottom: 20px;
-    }
-
-    /* 상단 필터 제어 패널 */
-    .filter-wrapper {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 0, 51, 0.18);
-        border-radius: 20px;
-        padding: 24px 28px;
-        box-shadow: 0 10px 30px -10px rgba(255, 0, 0, 0.08);
-        margin-bottom: 25px;
     }
 
     /* 랭킹 카드 */
@@ -190,93 +178,60 @@ st.markdown("""
         letter-spacing: -0.5px;
     }
 
-    /* 조회 버튼 스타일 */
+    /* 버튼 스타일 커스텀 */
     div.stButton > button:first-child {
         background: linear-gradient(135deg, #FF0033 0%, #FF4500 100%);
         color: white;
         border: none;
-        border-radius: 12px;
+        border-radius: 10px;
         font-weight: 700;
-        font-size: 16px;
-        padding: 14px 28px;
-        width: 100%;
-        box-shadow: 0 6px 20px rgba(255, 0, 51, 0.35);
+        font-size: 15px;
+        padding: 10px 20px;
+        box-shadow: 0 4px 15px rgba(255, 0, 51, 0.3);
         transition: all 0.2s ease;
-        margin-top: 10px;
     }
     div.stButton > button:first-child:hover {
-        box-shadow: 0 8px 25px rgba(255, 0, 51, 0.5);
+        box-shadow: 0 6px 20px rgba(255, 0, 51, 0.45);
         transform: translateY(-2px);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- 사이드바 설정 -----------------
-with st.sidebar:
-    st.markdown("### ⚙️ 대시보드 환경설정")
-    API_KEY = st.text_input("YouTube Data API Key", type="password", help="키가 없으면 데모 데이터로 즉시 동작합니다.")
-    st.markdown("---")
-    st.markdown("🔴 **YouTube Shorts Radar**<br>지정 기간 & 키워드 랭킹 탐색기", unsafe_allow_html=True)
-
-# ----------------- 헤더 섹션 -----------------
-st.markdown("""
-<div class="hero-container">
-    <div class="badge-pill">⚡ REAL-TIME CALENDAR FILTER</div>
-    <div class="hero-title">YouTube Shorts Trends & Ranking</div>
-    <div class="hero-desc">캘린더에서 시작일과 종료일을 직접 지정하여 특정 기간의 바이럴 쇼츠를 분석하세요.</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ----------------- 상단 필터 패널 (캘린더 직접 지정 통합) -----------------
+# ----------------- 사이드바 설정 (필터링 상단 + 환경설정 하단) -----------------
 today = date.today()
 default_start = today - timedelta(days=30)
 
-with st.container():
-    st.markdown("<div class='filter-wrapper'>", unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("### 🎯 쇼츠 필터 설정")
     
-    # 1행: 키워드, 국가, 정렬 기준, 조회 개수
-    row1_c1, row1_c2, row1_c3, row1_c4 = st.columns([1.6, 1, 1, 1])
+    # 1. 검색 키워드
+    keyword = st.text_input("검색 키워드", value="챌린지")
 
-    with row1_c1:
-        st.markdown("**🔍 검색 키워드**")
-        keyword = st.text_input("검색 키워드", value="챌린지", label_visibility="collapsed")
+    # 2. 대상 국가
+    country_map = {
+        "한국 🇰🇷": "KR",
+        "미국 🇺🇸": "US",
+        "일본 🇯🇵": "JP",
+        "대만 🇹🇼": "TW",
+        "전세계 🌐": ""
+    }
+    country_selected = st.selectbox("대상 국가", list(country_map.keys()), index=0)
+    region_code = country_map[country_selected]
 
-    with row1_c2:
-        st.markdown("**🌏 대상 국가**")
-        country_map = {
-            "한국 🇰🇷": "KR",
-            "미국 🇺🇸": "US",
-            "일본 🇯🇵": "JP",
-            "대만 🇹🇼": "TW",
-            "전세계 🌐": ""
-        }
-        country_selected = st.selectbox("대상 국가", list(country_map.keys()), index=0, label_visibility="collapsed")
-        region_code = country_map[country_selected]
+    # 3. 정렬 기준
+    sort_option = st.selectbox("정렬 기준", ["조회수 순위", "좋아요 순위", "댓글 순위"], index=0)
 
-    with row1_c3:
-        st.markdown("**📊 정렬 기준**")
-        sort_option = st.selectbox("정렬 기준", ["조회수 순위", "좋아요 순위", "댓글 순위"], index=0, label_visibility="collapsed")
+    # 4. 추출 개수
+    max_results = st.slider("추출 개수", min_value=5, max_value=50, value=10)
 
-    with row1_c4:
-        st.markdown("**🔢 추출 개수**")
-        max_results = st.slider("추출 개수", min_value=5, max_value=50, value=10, label_visibility="collapsed")
+    # 5. 업로드 기간 (캘린더 선택)
+    date_range = st.date_input(
+        "업로드 기간",
+        value=(default_start, today),
+        max_value=today,
+        help="캘린더에서 시작일과 종료일을 차례로 클릭하세요."
+    )
 
-    st.markdown("<hr style='margin: 12px 0 16px 0; border: none; border-top: 1px dashed rgba(255,0,0,0.15);'>", unsafe_allow_html=True)
-
-    # 2행: 캘린더 날짜 범위 선택 (시작일 ~ 종료일)
-    row2_c1, row2_c2 = st.columns([1.5, 2.5])
-    
-    with row2_c1:
-        st.markdown("**📅 업로드 기간 (캘린더 선택)**")
-        date_range = st.date_input(
-            "기간 선택",
-            value=(default_start, today),
-            max_value=today,
-            label_visibility="collapsed",
-            help="캘린더 달력에서 시작 날짜와 종료 날짜를 차례로 클릭하세요."
-        )
-
-    # 선택된 날짜 파싱
     if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
         start_date, end_date = date_range
     elif isinstance(date_range, (list, tuple)) and len(date_range) == 1:
@@ -286,13 +241,30 @@ with st.container():
         start_date = default_start
         end_date = today
 
-    with row2_c2:
-        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
-        st.caption(f"📌 선택된 기간: **{start_date.strftime('%Y년 %m월 %d일')} ~ {end_date.strftime('%Y년 %m월 %d일')}** 업로드 영상 필터링")
+    # 6. 조회 버튼
+    search_clicked = st.button("🔥 트렌드 분석 조회", use_container_width=True)
 
-    # 조회 실행 버튼
-    search_clicked = st.button("🔥 캘린더 기간 내 쇼츠 트렌드 분석하기", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # 사이드바 하단 영역 분리
+    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # 하단: 대시보드 환경설정
+    st.markdown("### ⚙️ 대시보드 환경설정")
+    API_KEY = st.text_input(
+        "YouTube Data API Key", 
+        type="password", 
+        help="입력하지 않으면 데모 샘플 데이터가 표출됩니다."
+    )
+    st.caption("🔴 **Shorts Trend Hub v2.0**")
+
+# ----------------- 메인 히어로 헤더 -----------------
+st.markdown("""
+<div class="hero-container">
+    <div class="badge-pill">⚡ REAL-TIME SHORTS RADAR</div>
+    <div class="hero-title">YouTube Shorts Trends & Ranking</div>
+    <div class="hero-desc">왼쪽 사이드바의 기간과 필터를 통해 타겟 쇼츠 트렌드를 발굴하세요.</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ----------------- 데이터 수집/필터링 로직 -----------------
 def get_mock_data():
@@ -347,7 +319,6 @@ def fetch_shorts(api_key, query, region, s_date, e_date, sort_metric, limit):
     from googleapiclient.discovery import build
     youtube = build("youtube", "v3", developerKey=api_key)
     
-    # 캘린더 시작일(00:00:00 UTC) ~ 종료일(23:59:59 UTC)을 ISO8601 포맷으로 변환
     published_after = datetime.combine(s_date, datetime.min.time()).replace(tzinfo=timezone.utc).isoformat()
     published_before = datetime.combine(e_date, datetime.max.time()).replace(tzinfo=timezone.utc).isoformat()
 
@@ -387,7 +358,6 @@ def fetch_shorts(api_key, query, region, s_date, e_date, sort_metric, limit):
             "url": f"https://www.youtube.com/shorts/{it['id']}"
         })
 
-    # 정렬 기준 반영
     if sort_metric == "조회수 순위":
         items.sort(key=lambda x: x["views"], reverse=True)
     elif sort_metric == "좋아요 순위":
@@ -404,7 +374,7 @@ if search_clicked:
         st.toast("💡 데모 모드로 전환되어 샘플 랭킹 데이터를 표시합니다!", icon="✨")
         results = get_mock_data()
     else:
-        with st.spinner("🚀 지정한 기간의 쇼츠 트렌드를 스캔하는 중..."):
+        with st.spinner("🚀 지정한 조건의 쇼츠 트렌드를 스캔하는 중..."):
             try:
                 results = fetch_shorts(
                     API_KEY, 
@@ -423,7 +393,7 @@ else:
 # ----------------- 랭킹 리스트 출력 -----------------
 if results:
     st.markdown(f"""
-    <div style='display:flex; justify-content:space-between; align-items:flex-end; margin: 30px 0 16px 0;'>
+    <div style='display:flex; justify-content:space-between; align-items:flex-end; margin: 10px 0 20px 0;'>
         <div>
             <span style='font-size:22px; font-weight:800; color:#111;'>🏆 인기 쇼츠 TOP 랭킹</span>
             <span style='font-size:14px; color:#888; margin-left:10px;'>키워드: <b>'{keyword}'</b> | {country_selected}</span>
@@ -460,4 +430,4 @@ if results:
         """
         st.markdown(card_html, unsafe_allow_html=True)
 elif search_clicked:
-    st.info("해당 기간 및 키워드 조건에 부합하는 쇼츠 영상이 없습니다. 날짜 범위를 넓혀보세요.")
+    st.info("해당 조건에 부합하는 쇼츠 영상이 없습니다. 날짜 범위를 넓히거나 다른 키워드로 검색해 보세요.")
